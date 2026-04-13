@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dan Koe: 后AI时代价值感测验</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --primary-text: #202124;
+            --secondary-text: #5f6368;
+            --accent-color: #1a73e8;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --border-color: #dadce0;
+            --progress-bg: #e8eaed;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #main-wrapper {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* 顶部状态栏 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .progress-info { font-size: 14px; color: var(--secondary-text); font-weight: 500; }
+        
+        .score-badge {
+            background: #e8f0fe;
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .score-up { animation: scorePop 0.4s ease; }
+
+        @keyframes scorePop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background: var(--success-color); color: white; }
+            100% { transform: scale(1); }
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: var(--progress-bg);
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* 题目卡片 */
+        .question-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .question-card.active { display: block; animation: slideIn 0.4s ease; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .q-text { font-size: 18px; line-height: 1.6; font-weight: 500; margin-bottom: 24px; }
+
+        .options-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .option-item {
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+            background: #fff;
+        }
+
+        .option-item:hover { background-color: #f8f9fa; border-color: #bdc1c6; }
+        .option-item.correct { background-color: #e6f4ea; border-color: var(--success-color); color: #137333; }
+        .option-item.wrong { background-color: #fce8e6; border-color: var(--error-color); color: #c5221f; }
+
+        /* 提示与操作区 */
+        .hint-box {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: #f1f3f4;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--secondary-text);
+            border-left: 4px solid var(--accent-color);
+            display: none;
+        }
+
+        .hint-active { display: block; animation: fadeIn 0.4s ease; }
+
+        .action-area {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .next-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            display: none;
+        }
+
+        .next-btn:hover { background-color: #1765cc; }
+
+        /* 结算界面 */
+        #result-screen { text-align: center; padding: 40px; display: none; }
+        .result-score { font-size: 48px; color: var(--accent-color); margin: 20px 0; }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #9aa0a6;
+            line-height: 1.8;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="main-wrapper">
+    <div id="quiz-ui">
+        <div class="status-bar">
+            <div class="progress-info" id="progress-text">题目 1 / 13</div>
+            <div class="score-badge" id="score-display">得分: 0</div>
+        </div>
+        
+        <div class="progress-container">
+            <div id="progress-fill"></div>
+        </div>
+
+        <div id="question-container"></div>
+
+        <div class="action-area">
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()">下一题</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="question-card">
+        <h2>测验完成！</h2>
+        <p>你的最终得分是</p>
+        <div class="result-score" id="final-score">0</div>
+        <p class="subtitle">一人公司 · 参考题库</p>
+        <button class="next-btn" style="display:inline-block; margin-top:20px;" onclick="location.reload()">重新开始</button>
+    </div>
+
+    <footer>
+        <p>一人公司 · 参考题库</p>
+        <p>「强制防切割代码：STRUCTURE_STABLE_v2026」</p>
+    </footer>
+</div>
+
+<script>
+    const quizData = [
+        { q: "在拥有各种强大AI工具的今天，为什么人们依然会选择观看特定人类创作者的内容？", options: ["因为目前的AI无法处理长视频或提供准确的摘要。", "因为人们真正在意的是创作者的品味、视角和个人故事，这些是人们愿意付费的稀缺资源。", "因为AI生成的内容存在版权争议。", "因为人类创作者的更新速度比AI更快。"], ans: 1, hint: "线索：AI 使得基础信息商品化，唯有独特的审美（品味）和个人叙事无法被算法替代。" },
+        { q: "根据视频，人类历史上“意义”的来源经历了四个阶段，其中第四阶段（未来）的特征是什么？", options: ["意义由神明、国王或宗教等从高处赋予。", "意义通过工作和对机器的生产力贡献来获得。", "意义被后现代主义解构，完全不复存在。", "意义必须由每个人从自己内心中自主产生。"], ans: 3, hint: "解析：第四阶段强调“内在自主性”，即每个人都是自己意义的建筑师。" },
+        { q: "在 David Shapiro 的后劳动力经济学理论中，家庭收入的三个主要来源是什么？", options: ["股票分红、加密货币收益、房地产租金", "劳动力工资（受AI威胁）、政府转移支付（UBI）、资本收入（拥有资产）", "全职工作、兼职副业、政府补贴", "广告分成、品牌赞助、粉丝打赏"], ans: 1, hint: "提示：未来的收入结构将从纯劳动力转向资产所有权和政府分配的结合。" },
+        { q: "在未来，哪些类型的工作最不容易被AI取代，依然需要“人类在环”？", options: ["数据录入、基础编程、客户服务。", "机械制造、流水线装配、重复性劳动。", "高责任岗位、体验经济、意义创造者，以及建立关系和信任的岗位。", "通用文案撰写、基础图像设计、初级翻译。"], ans: 2, hint: "关键：当人类本身成为“产品”时（如信任、陪伴、共同体验），AI 无法完成替换。" },
+        { q: "导致现代人感到“无意义”和空虚的两大“杀手”是什么？", options: ["贫穷与疾病", "竞争与压力", "停滞（缺乏进步感）与孤立（缺乏与宏大事物的连接）", "失败与外界批评"], ans: 2, hint: "线索：人类需要“向前的运动感”和“对他人的贡献感”来维持心理健康。" },
+        { q: "支撑人类生命“意义”的两大核心支柱是什么？", options: ["财富与名望", "自由与健康", "进步（创造性解决问题）与贡献（影响他人并连接宏大事务）", "知识与权力"], ans: 2, hint: "解析：进步是向前的动力，贡献是连接的纽带。" },
+        { q: "在日常生活中制造“意义”的三个具体发生器（Generators）是什么？", options: ["目标设定、时间管理、执行力", "挣扎（进步引擎）、好奇心（方向）和地位/认可（贡献证明）", "灵感、天赋、汗水", "流量、转化率、留存率"], ans: 1, hint: "提示：挣扎不是痛苦，而是克服困难带来的进步感。" },
+        { q: "在未来，机器（AI）与人类在体验上的核心分工有何不同？", options: ["机器掌握叙事，人类处理摩擦。", "机器处理“摩擦”（消除繁琐），人类掌握“叙事”（支付溢价的细品体验）。", "机器负责体验经济，人类负责工业生产。", "机器创造艺术，人类负责销售与营销。"], ans: 1, hint: "关键：人类支付溢价是为了“叙事”带来的心理价值。" },
+        { q: "什么是判断你是否会被AI取代的“替换测试（Swap Test）”？", options: ["测试AI能否写出比人类语法更准确的文章。", "如果作品的价值与创造它的人的身份、声誉紧密绑定，这就是你的护城河。", "测试人类能否辨别出哪些内容是AI生成的。", "测试不同的AI工具之间哪一个处理速度更快。"], ans: 1, hint: "逻辑：不可替代性源于“你是谁”，而非“你做了什么”。" },
+        { q: "AI 永远无法复制人类的哪五个核心特质，导致它无法通过“替换测试”？", options: ["逻辑分析、数据处理、信息检索、多语言翻译、全天候工作。", "图像生成、音频合成、视频剪辑、代码编写、文本润色。", "视角、能量特征、意义建构能力、生命轨迹、不断演变的品味。", "绝对客观、无情绪波动、超强记忆力、无视疲劳。"], ans: 2, hint: "提示：这些特质构成了人类的“独特性”。" },
+        { q: "Dan Koe 提出的“后 AI 时代技能栈”包含哪五个层级？", options: ["编程、设计、写作、演讲、销售。", "代理能力（Agency）、品味、视角、说服力、技术诀窍。", "英语水平、数学思维、逻辑推理、沟通技巧、团队协作。", "趋势预测、风险管理、财务规划、人力资源、法务合规。"], ans: 1, hint: "逻辑：代理能力（自主行动）是这一切的底座。" },
+        { q: "在技能栈中，为什么“代理能力（Agency）”被称为基础的元技能？", options: ["因为它是最容易被AI自动化的标准化技能。", "因为代理能力是指代理别人进行枯燥工作的能力。", "指在没有他人许可下采取行动、设定轨迹的能力，否则你只能遵循会被自动化的老路。", "因为它是进入传统大型企业工作的唯一敲门砖。"], ans: 2, hint: "解析：主动性是人类在算法时代最后的堡垒。" },
+        { q: "在“无限图书馆”定理背景下，为什么“品味（Taste）与策展”变得比创造本身更重要？", options: ["因为策展比创造花费的时间更长，成本更高。", "因为人们更喜欢看短视频而不是阅读长文章。", "因为AI只能负责分类，不能创造新内容。", "当所有组合都能被AI生成时，信息失去价值，挑选有价值信息的能力（策展）变得至关重要。"], ans: 3, hint: "线索：在无限的供应中，筛选者的审美（品味）就是稀缺资源。" }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+    const total = quizData.length;
+
+    function initQuiz() {
+        showQuestion(0);
+        updateProgress();
+    }
+
+    function showQuestion(idx) {
+        const container = document.getElementById('question-container');
+        container.innerHTML = '';
+        const data = quizData[idx];
+
+        const card = document.createElement('div');
+        card.className = 'question-card active';
+        
+        let optionsHTML = data.options.map((opt, i) => 
+            `<div class="option-item" onclick="handleSelect(this, ${idx}, ${i})">${String.fromCharCode(65 + i)}. ${opt}</div>`
+        ).join('');
+
+        card.innerHTML = `
+            <div class="q-text">${idx + 1}. ${data.q}</div>
+            <div class="options-list">${optionsHTML}</div>
+            <div class="hint-box" id="hint-box">${data.hint}</div>
+        `;
+        container.appendChild(card);
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function handleSelect(el, qIdx, optIdx) {
+        const card = el.parentElement;
+        if (card.classList.contains('answered')) return;
+        card.classList.add('answered');
+
+        const correctAns = quizData[qIdx].ans;
+        const allOptions = card.querySelectorAll('.option-item');
+
+        if (optIdx === correctAns) {
+            el.classList.add('correct');
+            updateScore(10);
+        } else {
+            el.classList.add('wrong');
+            allOptions[correctAns].classList.add('correct');
+        }
+
+        document.getElementById('hint-box').classList.add('hint-active');
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function updateScore(points) {
+        score += points;
+        const badge = document.getElementById('score-display');
+        badge.innerText = `得分: ${score}`;
+        badge.classList.remove('score-up');
+        void badge.offsetWidth;
+        badge.classList.add('score-up');
+    }
+
+    function updateProgress() {
+        const percent = ((currentIdx) / total) * 100;
+        document.getElementById('progress-fill').style.width = `${percent}%`;
+        document.getElementById('progress-text').innerText = `题目 ${currentIdx + 1} / ${total}`;
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < total) {
+            showQuestion(currentIdx);
+            updateProgress();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-ui').style.display = 'none';
+        const resultScreen = document.getElementById('result-screen');
+        resultScreen.style.display = 'block';
+        document.getElementById('progress-fill').style.width = `100%`;
+        document.getElementById('final-score').innerText = score;
+    }
+
+    window.onload = initQuiz;
+</script>
+</body>
+</html>
